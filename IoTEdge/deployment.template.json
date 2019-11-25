@@ -1,0 +1,75 @@
+{
+  "moduleContent": {
+    "$edgeAgent": {
+      "properties.desired": {
+        "schemaVersion": "1.0",
+        "runtime": {
+          "type": "docker",
+          "settings": {
+            "minDockerVersion": "v1.25",
+            "loggingOptions": "",
+            "registryCredentials": {
+              "iotcontainers": {
+                "username": "$CONTAINER_REGISTRY_USERNAME_iotcontainers",
+                "password": "$CONTAINER_REGISTRY_PASSWORD_iotcontainers",
+                "address": "iotcontainers.azurecr.io"
+              }
+            }
+          }
+        },
+        "systemModules": {
+          "edgeAgent": {
+            "type": "docker",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-agent:1.0",
+              "createOptions": ""
+            }
+          },
+          "edgeHub": {
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-hub:1.0",
+              "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"8883/tcp\":[{\"HostPort\":\"8883\"}],\"443/tcp\":[{\"HostPort\":\"443\"}]}}}"
+            }
+          }
+        },
+        "modules": {
+          "OBDInterfaceContainer": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "iotcontainers.azurecr.io/obdinterfacecontainer:0.0.1-arm32v7",
+              "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"8082/tcp\":[{\"HostPort\":\"8082\"}]},\"Devices\":[{\"PathOnHost\":\"/dev/rfcomm0\",\"PathInContainer\":\"/dev/rfcomm0\",\"CgroupPermissions\":\"rwm\"}],\"Privileged\":true}}"
+            }
+          },
+          "HubUploadContainer": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "iotcontainers.azurecr.io/hubuploadcontainer:0.0.1-arm32v7",
+              "createOptions": ""
+            }
+          }
+        }
+      }
+    },
+    "$edgeHub": {
+      "properties.desired": {
+        "schemaVersion": "1.0",
+        "routes": {
+          "HubAgentContainerToIoTHub": "FROM /messages/modules/HubAgentContainer/outputs/* INTO $upstream",
+          "HubUploadContainerToIoTHub": "FROM /messages/modules/HubUploadContainer/outputs/* INTO $upstream"
+        },
+        "storeAndForwardConfiguration": {
+          "timeToLiveSecs": 7200
+        }
+      }
+    }
+  }
+}
